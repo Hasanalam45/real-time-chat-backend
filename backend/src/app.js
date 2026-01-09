@@ -18,26 +18,12 @@ import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js
  * @returns {Object} Configured Express app
  */
 export const createApp = (app) => {
-    // CORS configuration with dynamic origin handling
+    // CORS configuration
+
+    const fixedCors = `https://${config.cors.origin}`;
     app.use(
         cors({
-            origin: (origin, callback) => {
-                // Allow requests with no origin (like mobile apps or curl requests)
-                if (!origin) return callback(null, true);
-
-                const allowedOrigins = Array.isArray(config.cors.origin)
-                    ? config.cors.origin
-                    : [config.cors.origin];
-
-                // Check if origin is in allowed list
-                if (allowedOrigins.includes(origin)) {
-                    callback(null, true);
-                } else {
-                    console.log('CORS blocked origin:', origin);
-                    console.log('Allowed origins:', allowedOrigins);
-                    callback(new Error('Not allowed by CORS'));
-                }
-            },
+            origin: fixedCors,
             credentials: config.cors.credentials,
         })
     );
