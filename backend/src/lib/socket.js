@@ -13,13 +13,45 @@ const app = express();
 const server = http.createServer(app);
 
 /**
+ * CORS origin validation for Socket.IO
+ * Handles origins with or without protocol
+ */
+const validateSocketOrigin = (origin, callback) => {
+    // Allow requests with no origin
+    if (!origin) {
+        return callback(null, true);
+    }
+
+    // Get allowed origin from config
+    const allowedOrigin = config.cors.origin;
+
+    // Normalize: remove protocol from both for comparison
+    const normalizeOrigin = (url) => url.replace(/^https?:\/\//, '').toLowerCase();
+
+    const originNormalized = normalizeOrigin(origin);
+    const allowedNormalized = normalizeOrigin(allowedOrigin);
+
+    // Check if origins match (with or without protocol)
+    const isAllowed = originNormalized === allowedNormalized ||
+        origin === allowedOrigin ||
+        origin === `https://${allowedNormalized}` ||
+        origin === `http://${allowedNormalized}`;
+
+    if (isAllowed) {
+        callback(null, true);
+    } else {
+        console.log(`❌ Socket CORS blocked: ${origin}`);
+        console.log(`   Allowed: ${allowedOrigin}`);
+        callback(new Error('Not allowed by CORS'));
+    }
+};
+
+/**
  * Initialize Socket.IO server with CORS configuration
  */
-const fixedCors = `https://${config.cors.origin}`;
-
 const io = new Server(server, {
     cors: {
-        origin: fixedCors,
+        origin: validateSocketOrigin,
         credentials: config.cors.credentials,
         methods: ['GET', 'POST'],
     },
