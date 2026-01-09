@@ -15,13 +15,17 @@ const server = http.createServer(app);
 /**
  * Initialize Socket.IO server with CORS configuration
  */
+const fixedCors = `https://${config.cors.origin}`;
+
 const io = new Server(server, {
     cors: {
-        origin: config.cors.origin,
+        origin: fixedCors,
         credentials: config.cors.credentials,
         methods: ['GET', 'POST'],
     },
 });
+
+
 
 /**
  * Map to store online users
@@ -56,7 +60,7 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     if (userId) {
         userSocketMap[userId] = socket.id;
         console.log(`📝 Online users:`, Object.keys(userSocketMap));
-        
+
         // Broadcast updated online users list to all clients
         io.emit(SOCKET_EVENTS.GET_ONLINE_USERS, Object.keys(userSocketMap));
     }
@@ -66,7 +70,7 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
         const roomName = `group_${groupId}`;
         socket.join(roomName);
         console.log(`👥 User ${userId} joined group room: ${roomName}`);
-        
+
         // Notify other members in the group (optional)
         socket.to(roomName).emit('userJoinedGroup', { userId, groupId });
     });
@@ -76,7 +80,7 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
         const roomName = `group_${groupId}`;
         socket.leave(roomName);
         console.log(`👋 User ${userId} left group room: ${roomName}`);
-        
+
         // Notify other members in the group (optional)
         socket.to(roomName).emit('userLeftGroup', { userId, groupId });
     });
@@ -84,7 +88,7 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     // Handle disconnection
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {
         console.log(`❌ User disconnected: ${socket.id}`);
-        
+
         if (userId) {
             delete userSocketMap[userId];
             // Broadcast updated online users list
