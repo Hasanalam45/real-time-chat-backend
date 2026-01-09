@@ -18,10 +18,26 @@ import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js
  * @returns {Object} Configured Express app
  */
 export const createApp = (app) => {
-    // CORS configuration
+    // CORS configuration with dynamic origin handling
     app.use(
         cors({
-            origin: config.cors.origin,
+            origin: (origin, callback) => {
+                // Allow requests with no origin (like mobile apps or curl requests)
+                if (!origin) return callback(null, true);
+
+                const allowedOrigins = Array.isArray(config.cors.origin)
+                    ? config.cors.origin
+                    : [config.cors.origin];
+
+                // Check if origin is in allowed list
+                if (allowedOrigins.includes(origin)) {
+                    callback(null, true);
+                } else {
+                    console.log('CORS blocked origin:', origin);
+                    console.log('Allowed origins:', allowedOrigins);
+                    callback(new Error('Not allowed by CORS'));
+                }
+            },
             credentials: config.cors.credentials,
         })
     );
@@ -39,10 +55,10 @@ export const createApp = (app) => {
         });
     });
 
-  // API routes
-  app.use('/api/auth', authRoutes);
-  app.use('/api/message', messageRoutes);
-  app.use('/api/group', groupRoutes);
+    // API routes
+    app.use('/api/auth', authRoutes);
+    app.use('/api/message', messageRoutes);
+    app.use('/api/group', groupRoutes);
 
     // 404 handler (must be after all routes)
     app.use(notFoundHandler);
